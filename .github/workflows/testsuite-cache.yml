@@ -6,7 +6,7 @@ name: "Tests Cached"
 on:
   workflow_dispatch:
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "*/15 * * * *"
 
 defaults:
   run:
