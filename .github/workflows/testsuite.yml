@@ -4,12 +4,9 @@
 name: "Tests"
 
 on:
-  push:
-    branches:
-      - master
-      - nedbat/*
-  pull_request:
   workflow_dispatch:
+  schedule:
+    - cron: "*/30 * * * *"
 
 defaults:
   run:
@@ -23,10 +20,6 @@ env:
 permissions:
   contents: read
 
-concurrency:
-  group: "${{ github.workflow }}-${{ github.ref }}"
-  cancel-in-progress: true
-
 jobs:
   tests:
     name: "${{ matrix.python-version }} on ${{ matrix.os }}"
@@ -39,18 +32,7 @@ jobs:
           - macos
           - windows
         python-version:
-          # When changing this list, be sure to check the [gh-actions] list in
-          # tox.ini so that tox will run properly. PYVERSIONS
-          # Available versions:
-          # https://github.com/actions/python-versions/blob/main/versions-manifest.json
-          # https://github.com/actions/setup-python/blob/main/docs/advanced-usage.md#available-versions-of-python-and-pypy
-          - "3.7"
-          - "3.8"
           - "3.9"
-          - "3.10"
-          - "3.11"
-          - "pypy-3.7"
-          - "pypy-3.9"
       fail-fast: false
 
     steps:
@@ -70,18 +52,10 @@ jobs:
           python -VV
           python -m site
           python -m pip install --require-hashes -r requirements/tox.pip
-          # For extreme debugging:
-          # python -c "import urllib.request as r; exec(r.urlopen('https://bit.ly/pydoctor').read())"
 
       - name: "Run tox for ${{ matrix.python-version }}"
         continue-on-error: true
         id: tox1
-        run: |
-          python -m tox -- -rfsEX
-
-      - name: "Retry tox for ${{ matrix.python-version }}"
-        id: tox2
-        if: steps.tox1.outcome == 'failure'
         run: |
           python -m tox -- -rfsEX
 
