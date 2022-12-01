@@ -1,0 +1,66 @@
+# Licensed under the Apache License: http://www.apache.org/licenses/LICENSE-2.0
+# For details: https://github.com/nedbat/coveragepy/blob/master/NOTICE.txt
+
+name: "Tests No Cache"
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/30 * * * *"
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  PIP_DISABLE_PIP_VERSION_CHECK: 1
+  COVERAGE_IGOR_VERBOSE: 1
+  FORCE_COLOR: 1    # Get colored pytest output
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: "${{ matrix.python-version }} on ${{ matrix.os }}"
+    runs-on: "${{ matrix.os }}-latest"
+
+    strategy:
+      matrix:
+        os:
+          - ubuntu
+          - macos
+          - windows
+        python-version:
+          - "3.9"
+      fail-fast: false
+
+    steps:
+      - name: "Check out the repo"
+        uses: "actions/checkout@v3"
+
+      - name: "Set up Python"
+        uses: "actions/setup-python@v4"
+        with:
+          python-version: "${{ matrix.python-version }}"
+          cache-dependency-path: 'requirements/*.pip'
+
+      - name: "Install dependencies"
+        run: |
+          set -xe
+          python -VV
+          python -m site
+          python -m pip install --require-hashes -r requirements/tox.pip
+
+      - name: "Run tox for ${{ matrix.python-version }}"
+        continue-on-error: true
+        id: tox1
+        run: |
+          python -m tox -- -rfsEX
+
+      - name: "Set status"
+        if: always()
+        run: |
+          if ${{ steps.tox1.outcome != 'success' && steps.tox2.outcome != 'success' }}; then
+             exit 1
+          fi
